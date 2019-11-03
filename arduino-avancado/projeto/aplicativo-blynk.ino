@@ -35,7 +35,9 @@
 
 #include "ESP8266_Lib.h"
 #include "BlynkSimpleShieldEsp8266.h"
-
+#include <Servo.h> 
+#include "DHT.h"
+Servo servo_motor;
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
 char auth[] = "tr0SUjcbp-z1gbviMXnyiMPUpz7sgfXh";
@@ -54,16 +56,40 @@ char pass[] = "3327140570";
 #include "SoftwareSerial.h"
 SoftwareSerial EspSerial(10, 11); // RX, TX
 
+#define DHTPIN 7
+#define DHTTYPE DHT11
+DHT dht(DHTPIN,DHTTYPE);
+
+BlynkTimer timerDHT11;
+//BlynkTimer timerLDR;
+
 // Your ESP8266 baud rate:
 #define ESP8266_BAUD 9600
 
 ESP8266 wifi(&EspSerial);
 
+void lerSensorDHT11()
+{
+  float temperatura = dht.readTemperature();
+  float umidade = dht.readHumidity();
+  if(isnan(temperatura)|| isnan(umidade)){
+    return;
+  }
+  Blynk.virtualWrite(V4, temperatura);
+  Blynk.virtualWrite(V5, umidade);
+}
+/*
+void lerLDR(){
+  int valorLDR = analogRead(A1);
+  valorLDR = map(valorLDR,0,1023,0,100);
+  Blynk.virtualWrite(V6, valorLDR);
+}
+*/
 void setup()
 {
   // Debug console
   Serial.begin(9600);
-
+  dht.begin();
   delay(10);
 
   // Set ESP8266 baud rate
@@ -71,9 +97,15 @@ void setup()
   delay(10);
 
   Blynk.begin(auth, wifi, ssid, pass);
+
+  timerDHT11.setInterval(2000L, lerSensorDHT11);
+  //timerLDR.setInterval(100L, lerLDR);
+  
 }
 
 void loop()
 {
   Blynk.run();
+  timerDHT11.run();
+  //timerLDR.run();
 }
